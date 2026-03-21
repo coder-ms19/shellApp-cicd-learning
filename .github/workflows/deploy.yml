@@ -1,0 +1,45 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Backend Image
+        run: docker build -t shell-backend ./Backend
+
+      - name: Build Frontend Image
+        run: docker build -t shell-frontend ./frontend
+
+      - name: Deploy Docker Containers
+        run: |
+          set -eux
+
+          docker network create shell-network || true
+
+          docker stop shellbackend || true
+          docker stop shellfrontend || true
+
+          docker rm shellbackend || true
+          docker rm shellfrontend || true
+
+          docker run -d \
+            --name shellbackend \
+            --network shell-network \
+            --env-file /home/manish/backend.env \
+            -p 3000:3000 \
+            shell-backend
+
+          docker run -d \
+            --name shellfrontend \
+            --network shell-network \
+            -p 8081:80 \
+            shell-frontend
